@@ -184,6 +184,22 @@
 
 </details>
 
+## 📦 GitHub Actions 源码包安装
+
+仓库提供 [Package Source](https://github.com/nekox41/nonebot-plugin-parser/actions/workflows/package-source.yml) 工作流：向 `master` 推送代码、提交 PR、手动运行工作流，以及发布 Release 时自动打包可安装源码。运行完成后，可以在该次 Actions 的 **Artifacts** 里下载 `nonebot-plugin-parser-source-<commit>`。Artifact 下载包中包含 `nonebot-plugin-parser-source.zip`（源码 ZIP）。发布 Release 时，工作流还会将该源码 ZIP 附加到 Release 的 Assets，方便直接下载。
+
+将源码 ZIP 解压后，进入 `nonebot-plugin-parser-source` 目录，在你的机器人 Python 环境中执行：
+
+```bash
+# 本地可编辑（源码）安装，all 包含 yt-dlp 等可选依赖
+python -m pip install -e ".[all]"
+
+# 使用 uv 的环境也可以：
+# uv pip install -e ".[all]"
+```
+
+项目源码和资源文件位于 `src/nonebot_plugin_parser/`，构建配置位于 `pyproject.toml`。安装后通过 NoneBot 配置加载 `nonebot_plugin_parser`，不要同时加载另一份同名插件。仅复制 `src` 下的文件夹不会自动安装所需依赖。
+
 ## ⚙️ 配置
 
 <details>
@@ -240,6 +256,12 @@ parser_show_download_progress=False
 # 设置为 False 后，仅解析视频封面、标题、作者、时长等元数据；普通图片仍正常解析和发送
 # bm / ym 音频下载命令不受此开关影响
 parser_download_video=True
+
+# [可选] 针对每个平台单独控制视频/GIF 下载，未列出的平台继续使用全局设置
+# 全局 parser_download_video=False 时，任何平台都不能通过本配置重新开启下载
+# 可选平台: acfun / bilibili / douyin / kuaishou / tiktok / twitter / weibo / xiaohongshu / youtube
+# 下面的示例：禁用 B站/抖音视频，其他平台保持默认
+parser_download_video_platforms='{"bilibili": false, "douyin": false}'
 
 # [可选] 全局禁止的解析
 # 示例 parser_disabled_platforms=["bilibili", "douyin"] 表示禁止了哔哩哔哩和抖音

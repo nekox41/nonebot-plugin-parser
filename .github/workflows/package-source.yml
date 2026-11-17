@@ -1,0 +1,83 @@
+name: Package Source
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Build installable source ZIP
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Package plugin source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+
+          prefix = "nonebot-plugin-parser-source"
+          archive = Path("dist/nonebot-plugin-parser-source.zip")
+          archive.parent.mkdir(parents=True, exist_ok=True)
+
+          files = [
+              Path("pyproject.toml"),
+              Path("README.md"),
+              Path("LICENSE"),
+              *sorted(Path("src/nonebot_plugin_parser").rglob("*")),
+          ]
+          with ZipFile(archive, "w", ZIP_DEFLATED, compresslevel=6) as output:
+              for file in files:
+                  if file.is_file():
+                      output.write(file, f"{prefix}/{file.as_posix()}")
+
+          with ZipFile(archive) as output:
+              names = set(output.namelist())
+              required = {
+                  f"{prefix}/pyproject.toml",
+                  f"{prefix}/README.md",
+                  f"{prefix}/LICENSE",
+                  f"{prefix}/src/nonebot_plugin_parser/__init__.py",
+                  f"{prefix}/src/nonebot_plugin_parser/renders/resources/HYSongYunLangHeiW.ttf",
+              }
+              if not required.issubset(names) or output.testzip() is not None:
+                  raise SystemExit("Invalid source archive")
+          print(f"Source archive ready: {archive} ({archive.stat().st_size} bytes)")
+          PY
+
+      - name: Upload source ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: nonebot-plugin-parser-source-${{ github.sha }}
+          path: dist/nonebot-plugin-parser-source.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  release-asset:
+    name: Attach source ZIP to release
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    needs: package
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: nonebot-plugin-parser-source-${{ github.sha }}
+          path: dist
+
+      - name: Upload source ZIP to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" dist/nonebot-plugin-parser-source.zip --clobber

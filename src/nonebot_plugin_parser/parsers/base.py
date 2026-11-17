@@ -185,7 +185,8 @@ class BaseParser:
         from .data import VideoContent
         from ..utils import convert_video_to_gif, extract_video_first_frame
 
-        if not pconfig.download_video:
+        video_enabled = pconfig.is_video_download_enabled(self.platform.name)
+        if not video_enabled:
             # 不创建视频下载任务；兼容外部已传入 Task 的情况。
             if isinstance(url_or_task, Task):
                 url_or_task.cancel()
@@ -203,7 +204,7 @@ class BaseParser:
         if cover_url:
             cover_task = downloader.download_img(cover_url, ext_headers=self.headers)
             video_content.cover = PathTask(cover_task)
-        elif pconfig.download_video:
+        elif video_enabled:
             # 没有独立封面时，仅在允许视频下载的情况下提取首帧。
             async def extract_cover():
                 video_path = await video_content.path_task.get()
@@ -211,7 +212,7 @@ class BaseParser:
 
             video_content.cover = PathTask(extract_cover())
 
-        if is_gif and pconfig.download_video:
+        if is_gif and video_enabled:
             async def convert_to_gif():
                 video_path = await video_content.path_task.get()
                 return await convert_video_to_gif(video_path)

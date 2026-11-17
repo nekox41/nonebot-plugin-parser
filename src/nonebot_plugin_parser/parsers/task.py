@@ -50,6 +50,11 @@ class PathTask:
             return None
 
     @property
+    def disabled(self) -> bool:
+        """是否为禁止下载时创建的空路径任务。"""
+        return self._task is None
+
+    @property
     def uri(self) -> str | None:
         return self._path.as_uri() if isinstance(self._path, Path) else None
 

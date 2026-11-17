@@ -48,7 +48,7 @@ class BaseRenderer(ABC):
             self.result.repost.contents if self.result.repost else (),
         ):
             # 禁止视频下载时跳过视频/GIF 文件，但保留渲染卡片中的封面。
-            if isinstance(cont, VideoContent) and not pconfig.download_video:
+            if isinstance(cont, VideoContent) and cont.path_task.disabled:
                 continue
 
             path = await cont.path_task.safe_get(on_error)
