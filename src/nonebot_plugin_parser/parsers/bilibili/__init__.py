@@ -1,5 +1,4 @@
 import json
-import asyncio
 from re import Match
 from typing import ClassVar
 from collections.abc import AsyncGenerator
@@ -158,7 +157,7 @@ class BilibiliParser(BaseParser):
             return path
 
         video_content = self.create_video(
-            asyncio.create_task(download_video()),
+            download_video,
             page_info.cover,
             page_info.duration,
         )

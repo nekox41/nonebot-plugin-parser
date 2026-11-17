@@ -44,10 +44,14 @@ class YtdlpDownloader:
         self._video_info_mapping = LimitedSizeDict[str, VideoInfo]()
         self._extract_base_opts: _Params = {
             "quiet": True,
+            "noprogress": True,
             "skip_download": "1",
             "force_generic_extractor": True,
         }
-        self._download_base_opts: _Params = {}
+        self._download_base_opts: _Params = {
+            "quiet": not pconfig.show_download_progress,
+            "noprogress": not pconfig.show_download_progress,
+        }
         self._url_locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
         if proxy := pconfig.proxy:
             self._download_base_opts["proxy"] = proxy
@@ -76,6 +80,8 @@ class YtdlpDownloader:
     @auto_task
     async def download_video(self, url: str, cookiefile: Path | None = None) -> Path:
         """Download video by yt-dlp"""
+        if not pconfig.download_video:
+            raise IgnoreException
 
         video_info = await self.extract_video_info(url, cookiefile)
         duration = video_info.duration

@@ -7,6 +7,7 @@ from datetime import datetime
 from dataclasses import field, dataclass
 from collections.abc import Iterator, Awaitable
 
+from ..config import pconfig
 from .task import PathTask
 from .utils import fmt_duration
 
@@ -203,11 +204,13 @@ class ParseResult:
                 yield author.avatar.get()
 
         for cont in self.contents:
-            if not img_only or isinstance(cont, ImageContent):
+            if isinstance(cont, VideoContent):
+                if not img_only and pconfig.download_video:
+                    yield cont.path_task.get()
+                if cont.cover:
+                    yield cont.cover.get()
+            elif not img_only or isinstance(cont, ImageContent):
                 yield cont.path_task.get()
-
-            if isinstance(cont, VideoContent) and cont.cover:
-                yield cont.cover.get()
 
         for gra in self.graphics:
             if isinstance(gra, ImageContent):

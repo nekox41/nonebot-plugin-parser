@@ -21,9 +21,8 @@ class TikTokParser(BaseParser):
         video_info = await yt_dlp_downloader.extract_video_info(url)
 
         # 下载封面和视频
-        video = yt_dlp_downloader.download_video(url)
         video_content = self.create_video(
-            video,
+            lambda: yt_dlp_downloader.download_video(url),
             video_info.thumbnail,
             duration=video_info.duration,
         )

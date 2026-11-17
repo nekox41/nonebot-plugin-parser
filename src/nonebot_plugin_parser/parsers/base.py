@@ -176,38 +176,44 @@ class BaseParser:
 
     def create_video(
         self,
-        url_or_task: str | Task[Path],
+        url_or_task: str | Task[Path] | Callable[[], Task[Path] | Coroutine[Any, Any, Path]],
         cover_url: str | None = None,
         duration: float | None = None,
         is_gif: bool = False,
     ):
-        """创建视频内容, 未指定封面时会尝试从视频中提取封面"""
+        """创建视频内容；禁用视频下载时保留元数据和可用封面。"""
         from .data import VideoContent
         from ..utils import convert_video_to_gif, extract_video_first_frame
 
-        if isinstance(url_or_task, str):
-            path_task = downloader.download_video(url_or_task, ext_headers=self.headers)
-        elif isinstance(url_or_task, Task):
-            path_task = url_or_task
-
-        video_content = VideoContent(PathTask(path_task), duration=duration, is_gif=is_gif)
+        if not pconfig.download_video:
+            # 不创建视频下载任务；兼容外部已传入 Task 的情况。
+            if isinstance(url_or_task, Task):
+                url_or_task.cancel()
+            video_content = VideoContent(PathTask(), duration=duration, is_gif=is_gif)
+        else:
+            if isinstance(url_or_task, str):
+                path_task = downloader.download_video(url_or_task, ext_headers=self.headers)
+            elif isinstance(url_or_task, Task):
+                path_task = url_or_task
+            else:
+                # 延迟调用下载工厂：禁用视频下载时不会启动下载。
+                path_task = url_or_task()
+            video_content = VideoContent(PathTask(path_task), duration=duration, is_gif=is_gif)
 
         if cover_url:
             cover_task = downloader.download_img(cover_url, ext_headers=self.headers)
-        else:
-            # 如果没有封面 URL，尝试从视频中提取封面
+            video_content.cover = PathTask(cover_task)
+        elif pconfig.download_video:
+            # 没有独立封面时，仅在允许视频下载的情况下提取首帧。
             async def extract_cover():
-                video_path = await path_task
+                video_path = await video_content.path_task.get()
                 return await extract_video_first_frame(video_path)
 
-            cover_task = extract_cover()
+            video_content.cover = PathTask(extract_cover())
 
-        video_content.cover = PathTask(cover_task)
-
-        if is_gif:
-            # 需要转换为 GIF
+        if is_gif and pconfig.download_video:
             async def convert_to_gif():
-                video_path = await path_task
+                video_path = await video_content.path_task.get()
                 return await convert_video_to_gif(video_path)
 
             video_content.gif_path = PathTask(convert_to_gif())

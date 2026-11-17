@@ -129,6 +129,8 @@ class StreamDownloader:
         ext_headers: dict[str, str] | None = None,
     ) -> Path:
         """download video file by url with stream"""
+        if not pconfig.download_video:
+            raise IgnoreException
         if video_name is None:
             video_name = generate_file_name(url, ".mp4")
 
@@ -185,6 +187,8 @@ class StreamDownloader:
         ext_headers: dict[str, str] | None = None,
     ) -> Path:
         """download video and audio file by url with stream and merge"""
+        if not pconfig.download_video:
+            raise IgnoreException
         v_path, a_path = await asyncio.gather(
             self._download_file(v_url, ext_headers=ext_headers),
             self._download_file(a_url, ext_headers=ext_headers),
@@ -201,6 +205,8 @@ class StreamDownloader:
         ext_headers: dict[str, str] | None = None,
     ) -> Path:
         """download m3u8 file by url with stream"""
+        if not pconfig.download_video:
+            raise IgnoreException
         if video_name is None:
             video_name = generate_file_name(m3u8_url, ".mp4")
 

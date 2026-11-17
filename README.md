@@ -233,6 +233,14 @@ parser_duration_maximum=480
 # [可选] 音视频下载最大文件大小，单位 MB，超过该配置将阻断下载
 parser_max_size=90
 
+# [可选] 是否输出 yt-dlp 视频/音频下载进度（默认 False，可避免终端进度刷屏）
+parser_show_download_progress=False
+
+# [可选] 是否下载并发送各平台视频/GIF（默认 True）
+# 设置为 False 后，仅解析视频封面、标题、作者、时长等元数据；普通图片仍正常解析和发送
+# bm / ym 音频下载命令不受此开关影响
+parser_download_video=True
+
 # [可选] 全局禁止的解析
 # 示例 parser_disabled_platforms=["bilibili", "douyin"] 表示禁止了哔哩哔哩和抖音
 # 可选值: ["bilibili", "douyin", "kuaishou", "twitter", "youtube", "acfun", "tiktok", "weibo", "xiaohongshu"]

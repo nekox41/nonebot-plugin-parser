@@ -26,6 +26,10 @@ class Config(BaseModel):
     """代理"""
     parser_need_upload: bool = False
     """是否需要上传音频文件"""
+    parser_show_download_progress: bool = False
+    """是否显示 yt-dlp 的下载进度（默认关闭）"""
+    parser_download_video: bool = True
+    """是否允许下载和发送视频（关闭后仍解析封面、标题等信息）"""
     parser_use_base64: bool = False
     """是否使用 base64 编码发送图片，音频，视频"""
     parser_max_size: int = 90
@@ -135,6 +139,16 @@ class Config(BaseModel):
     def need_upload(self) -> bool:
         """是否需要上传音频文件"""
         return self.parser_need_upload
+
+    @property
+    def show_download_progress(self) -> bool:
+        """是否显示下载进度"""
+        return self.parser_show_download_progress
+
+    @property
+    def download_video(self) -> bool:
+        """是否下载视频"""
+        return self.parser_download_video
 
     @property
     def use_base64(self) -> bool:
