@@ -30,10 +30,10 @@ def test_per_platform_configuration(global_enabled, overrides, platform, expecte
 @pytest.mark.asyncio
 async def test_one_platform_disabled_other_enabled(monkeypatch, tmp_path):
     from nonebot_plugin_parser.config import pconfig
-    from nonebot_plugin_parser.constants import PlatformEnum
     from nonebot_plugin_parser.download import downloader
+    from nonebot_plugin_parser.constants import PlatformEnum
     from nonebot_plugin_parser.parsers.base import BaseParser
-    from nonebot_plugin_parser.parsers.data import ParseResult, Platform
+    from nonebot_plugin_parser.parsers.data import Platform, ParseResult
     from nonebot_plugin_parser.renders.default import DefaultRenderer
 
     class BiliParser(BaseParser):
@@ -51,14 +51,18 @@ async def test_one_platform_disabled_other_enabled(monkeypatch, tmp_path):
 
     def fake_video(*args, **kwargs):
         calls.append("video")
+
         async def work():
             return video_path
+
         return asyncio.create_task(work())
 
     def fake_cover(*args, **kwargs):
         calls.append("cover")
+
         async def work():
             return cover_path
+
         return asyncio.create_task(work())
 
     monkeypatch.setattr(downloader, "download_video", fake_video)
@@ -73,7 +77,9 @@ async def test_one_platform_disabled_other_enabled(monkeypatch, tmp_path):
     assert not disabled.gif_path
     assert calls == ["cover"]
     assert disabled.duration == 120
-    assert await disabled.cover.get() == cover_path
+    disabled_cover = disabled.cover
+    assert disabled_cover is not None
+    assert await disabled_cover.get() == cover_path
 
     bili_result = ParseResult(platform=BiliParser.platform, contents=[disabled])
     assert bili_result.video is disabled
@@ -86,7 +92,9 @@ async def test_one_platform_disabled_other_enabled(monkeypatch, tmp_path):
     )
     assert not enabled.path_task.disabled
     assert await enabled.path_task.get() == video_path
-    assert await enabled.cover.get() == cover_path
+    enabled_cover = enabled.cover
+    assert enabled_cover is not None
+    assert await enabled_cover.get() == cover_path
     assert calls == ["cover", "video", "cover"]
 
 
@@ -142,9 +150,7 @@ async def test_direct_stream_downloads_rejected_when_globally_disabled(monkeypat
     with pytest.raises(IgnoreException):
         await downloader.download_m3u8("https://example.com/video.m3u8")
     with pytest.raises(IgnoreException):
-        await downloader.download_av_and_merge(
-            "https://a", "https://b", output_path=pconfig.cache_dir / "test.mp4"
-        )
+        await downloader.download_av_and_merge("https://a", "https://b", output_path=pconfig.cache_dir / "test.mp4")
 
 
 @pytest.mark.parametrize("enabled", [False, True])
@@ -155,5 +161,5 @@ def test_ytdlp_progress_options(monkeypatch, enabled):
 
     monkeypatch.setattr(pconfig, "parser_show_download_progress", enabled)
     downloader = YtdlpDownloader()
-    assert downloader._download_base_opts["quiet"] is not enabled
-    assert downloader._download_base_opts["noprogress"] is not enabled
+    assert downloader._download_base_opts.get("quiet") is not enabled
+    assert downloader._download_base_opts.get("noprogress") is not enabled

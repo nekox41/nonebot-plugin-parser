@@ -213,6 +213,7 @@ class BaseParser:
             video_content.cover = PathTask(extract_cover())
 
         if is_gif and video_enabled:
+
             async def convert_to_gif():
                 video_path = await video_content.path_task.get()
                 return await convert_video_to_gif(video_path)

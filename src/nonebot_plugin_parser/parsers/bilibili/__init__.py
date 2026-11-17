@@ -1,4 +1,5 @@
 import json
+import asyncio
 from re import Match
 from typing import ClassVar
 from collections.abc import AsyncGenerator

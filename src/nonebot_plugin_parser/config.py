@@ -2,7 +2,7 @@ from pathlib import Path
 
 from nonebot import logger, require, get_driver, get_plugin_config
 from apilmoji import ELK_SH_CDN, EmojiStyle
-from pydantic import BaseModel, Field
+from pydantic import Field, BaseModel
 from bilibili_api.video import VideoCodecs, VideoQuality
 
 from .constants import RenderType, PlatformEnum
@@ -154,7 +154,7 @@ class Config(BaseModel):
 
     def is_video_download_enabled(self, platform: PlatformEnum | str) -> bool:
         """全局开关优先；未指定的平台默认允许下载。"""
-        return self.download_video and self.parser_download_video_platforms.get(platform, True)
+        return self.download_video and self.parser_download_video_platforms.get(PlatformEnum(platform), True)
 
     @property
     def use_base64(self) -> bool:
