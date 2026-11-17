@@ -37,10 +37,9 @@ class YouTubeParser(BaseParser):
             timestamp=video_info.timestamp,
         )
 
-        if video_info.duration <= pconfig.duration_maximum:
-            video = yt_dlp_downloader.download_video(url, self.cookies_file)
+        if video_info.duration <= pconfig.duration_maximum or not pconfig.download_video:
             result.video = self.create_video(
-                video,
+                lambda: yt_dlp_downloader.download_video(url, self.cookies_file),
                 video_info.thumbnail,
                 video_info.duration,
             )

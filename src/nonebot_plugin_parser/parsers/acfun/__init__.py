@@ -31,18 +31,17 @@ class AcfunParser(BaseParser):
         video_info = await self.parse_video_info(url)
         author = self.create_author(video_info.name, video_info.avatar_url)
 
-        if (duration := video_info.duration) >= pconfig.duration_maximum:
+        if pconfig.download_video and (duration := video_info.duration) >= pconfig.duration_maximum:
             logger.warning(f"视频时长 {duration} 超过最大限制 {pconfig.duration_maximum}")
             raise IgnoreException
 
-        video_task = self.downloader.download_m3u8(
-            video_info.m3u8_url,
-            video_name=f"acfun_{acid}.mp4",
-        )
-
         video_content = self.create_video(
-            video_task,
+            lambda: self.downloader.download_m3u8(
+                video_info.m3u8_url,
+                video_name=f"acfun_{acid}.mp4",
+            ),
             cover_url=video_info.coverUrl,
+            duration=video_info.duration,
         )
 
         return self.result(

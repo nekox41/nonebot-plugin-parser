@@ -2,7 +2,7 @@ from pathlib import Path
 
 from nonebot import logger, require, get_driver, get_plugin_config
 from apilmoji import ELK_SH_CDN, EmojiStyle
-from pydantic import BaseModel
+from pydantic import Field, BaseModel
 from bilibili_api.video import VideoCodecs, VideoQuality
 
 from .constants import RenderType, PlatformEnum
@@ -26,6 +26,12 @@ class Config(BaseModel):
     """代理"""
     parser_need_upload: bool = False
     """是否需要上传音频文件"""
+    parser_show_download_progress: bool = False
+    """是否显示 yt-dlp 的下载进度（默认关闭）"""
+    parser_download_video: bool = True
+    """视频下载全局总开关；False 时各平台均不下载视频"""
+    parser_download_video_platforms: dict[PlatformEnum, bool] = Field(default_factory=dict)
+    """平台视频下载开关；未指定的平台遵循全局设置"""
     parser_use_base64: bool = False
     """是否使用 base64 编码发送图片，音频，视频"""
     parser_max_size: int = 90
@@ -135,6 +141,20 @@ class Config(BaseModel):
     def need_upload(self) -> bool:
         """是否需要上传音频文件"""
         return self.parser_need_upload
+
+    @property
+    def show_download_progress(self) -> bool:
+        """是否显示下载进度"""
+        return self.parser_show_download_progress
+
+    @property
+    def download_video(self) -> bool:
+        """是否下载视频"""
+        return self.parser_download_video
+
+    def is_video_download_enabled(self, platform: PlatformEnum | str) -> bool:
+        """全局开关优先；未指定的平台默认允许下载。"""
+        return self.download_video and self.parser_download_video_platforms.get(PlatformEnum(platform), True)
 
     @property
     def use_base64(self) -> bool:

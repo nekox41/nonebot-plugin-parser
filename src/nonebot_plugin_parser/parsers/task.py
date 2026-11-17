@@ -5,7 +5,7 @@ from collections.abc import Callable, Coroutine
 
 from nonebot import logger
 
-from ..exception import ParseException
+from ..exception import ParseException, IgnoreException
 
 
 class PathTask:
@@ -13,15 +13,20 @@ class PathTask:
 
     def __init__(
         self,
-        task: Task[Path] | Coroutine[Any, Any, Path],
+        task: Task[Path] | Coroutine[Any, Any, Path] | None = None,
     ):
-        if isinstance(task, Task):
-            self._task: Task[Path] = task
+        if task is None:
+            self._task: Task[Path] | None = None
+        elif isinstance(task, Task):
+            self._task = task
         else:
             self._task = create_task(task, name=task.__name__)
         self._path: Path | None = None
 
     async def get(self) -> Path:
+        if self._task is None:
+            raise IgnoreException
+
         if self._path is not None:
             return self._path
 
@@ -32,21 +37,30 @@ class PathTask:
         self,
         on_error: Callable[[Exception], None] | None = None,
     ) -> Path | None:
+        if self._task is None:
+            return None
+
         try:
             return await self.get()
         except Exception as e:
-            if not isinstance(e, ParseException):
+            if not isinstance(e, (ParseException, IgnoreException)):
                 logger.opt(exception=e).error(f"task({self._task.get_name()}) failed")
             if on_error is not None:
                 on_error(e)
             return None
 
     @property
+    def disabled(self) -> bool:
+        """是否为禁止下载时创建的空路径任务。"""
+        return self._task is None
+
+    @property
     def uri(self) -> str | None:
         return self._path.as_uri() if isinstance(self._path, Path) else None
 
     def __repr__(self) -> str:
+        if self._task is None:
+            return "PathTask(disabled=True)"
         if self._path is not None:
             return f"PathTask(path={self._path.name})"
-        else:
-            return f"PathTask(task={self._task.get_name()}, done={self._task.done()})"
+        return f"PathTask(task={self._task.get_name()}, done={self._task.done()})"
